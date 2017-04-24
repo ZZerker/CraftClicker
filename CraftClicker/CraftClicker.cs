@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.Drawing;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Windows.Input;
 using Timer = System.Windows.Forms.Timer;
@@ -20,11 +21,13 @@ namespace TimerTest
         private int iterationsLeft = -1;
         private int mouseX;
         private int mouseY;
+        private Stopwatch stopwatch;
 
         public CraftClicker()
         {
             this.InitializeComponent();
-
+            this.stopwatch=new Stopwatch();
+            
             this.Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath);
             for(var i = 0; i < 1000; i++)
             {
@@ -53,10 +56,21 @@ namespace TimerTest
             this.timer.Interval = this.intervallMilliseconds;
             this.timer.Tick += this.TimerOnTick;
 
+            Task.Factory.StartNew(this.UiThread);
 
-            WinApi.RegisterHotKey(this.Handle, 1, 0, (int)this.hotKey);
+            WinApi.RegisterHotKey(this.Handle, 1, 0, 118);
             this.assignButton.Text = @"Assign - " + this.hotKey;
             this.assignButton.KeyDown += this.AssignButtonOnKeyDown;
+        }
+
+        private void UiThread()
+        {
+            while(true)
+            {
+                Thread.Sleep(300);
+                this.Invoke((MethodInvoker)delegate { Text = "CraftClicker " + (this.timer.Enabled?"Running":"Stopped") + " " + this.stopwatch.Elapsed.ToString(); });
+
+            }
         }
 
         #region Overrides of Form
@@ -112,6 +126,8 @@ namespace TimerTest
         {
             this.timer.Enabled = false;
             this.startButton.Text = @"Start";
+            this.stopwatch.Stop();
+            this.stopwatch.Reset();
         }
 
         private void DoMouseClick()
@@ -168,6 +184,7 @@ namespace TimerTest
             this.SetRandomInterval();
             this.timer.Enabled = true;
             this.startButton.Text = @"Stop";
+            this.stopwatch.Start();
         }
 
 
@@ -198,6 +215,8 @@ namespace TimerTest
 
         private void TimerOnTick(object sender, EventArgs eventArgs)
         {
+          
+
             if(this.fixNumberOfIterationsRadioButton.Checked)
             {
                 this.iterationsLeft--;
@@ -210,6 +229,9 @@ namespace TimerTest
             this.DoMouseClick();
             this.SetRandomInterval();
             Debug.WriteLine("Interval: " + this.timer.Interval);
+            this.stopwatch.Stop();
+            this.stopwatch.Reset();
+            this.stopwatch.Start();
         }
 
         #region Overrides of Control
